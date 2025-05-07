@@ -1,0 +1,38 @@
+[
+  {
+    "chapter": 1,
+    "number": 1,
+    "text": "I have a pen.",
+    "audio": "audio/ch1_1.wav"
+  },
+  {
+    "chapter": 1,
+    "number": 2,
+    "text": "This is a book.",
+    "audio": "audio/ch1_2.wav"
+  },
+  {
+    "chapter": 1,
+    "number": 3,
+    "text": "He plays soccer.",
+    "audio": "audio/ch1_3.wav"
+  },
+  {
+    "chapter": 2,
+    "number": 1,
+    "text": "Where is the library?",
+    "audio": "audio/ch2_1.wav"
+  },
+  {
+    "chapter": 2,
+    "number": 2,
+    "text": "She likes music.",
+    "audio": "audio/ch2_2.wav"
+  },
+  {
+    "chapter": 3,
+    "number": 1,
+    "text": "Good night.",
+    "audio": "audio/ch3_1.wav"
+  }
+]

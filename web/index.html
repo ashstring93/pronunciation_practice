@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>발음 연습 웹앱</title>
+  <!-- Chart.js for visualization -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: Arial; padding: 20px; max-width: 480px; margin: auto; }
+    #selector { margin-bottom: 20px; }
+    label { margin-right: 5px; }
+    select, button { margin-right: 10px; padding: 5px; }
+    #sentence-text { margin: 20px 0; font-size: 1.2em; }
+    #score { margin-top: 10px; font-weight: bold; }
+    canvas { width: 100%; max-width: 480px; margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <h1>발음 연습</h1>
+
+  <!-- ② 챕터·문장 선택 -->
+  <div id="selector">
+    <label for="chapter-select">챕터</label>
+    <select id="chapter-select"></select>
+    <label for="sentence-select">문장</label>
+    <select id="sentence-select"></select>
+    <button id="load-btn">불러오기</button>
+  </div>
+
+  <!-- ③ 문장 표시 -->
+  <div id="sentence-text">문장을 선택하고 [불러오기]를 눌러 주세요.</div>
+
+  <!-- ④ 원어민 음성 재생 -->
+  <button id="play-native">▶ 원어민 음성 듣기</button>
+  <audio id="native-audio"></audio>
+
+  <!-- ⑤ 녹음·점수·내 녹음 듣기 -->
+  <div style="margin-top:20px;">
+    <button id="record-me">● 내 목소리 녹음하기</button>
+    <button id="stop-record" disabled>■ 녹음 중지</button>
+    <button id="play-learner" disabled>🔊 내 녹음 듣기</button>
+    <div id="score">유사도: – 점</div>
+  </div>
+  <audio id="learner-audio" controls style="display:none;"></audio>
+
+  <!-- ⑥ 그래프: Pitch & Intensity -->
+  <canvas id="pitch-chart"></canvas>
+  <canvas id="intensity-chart"></canvas>
+
+  <script>
+    let sentences = [], recorder, audioChunks;
+
+    // 1) sentences.json 불러오기
+    fetch('sentences.json')
+      .then(r => r.json())
+      .then(data => { sentences = data; initSelectors(); });
+
+    // 2) 드롭다운 초기화
+    function initSelectors() {
+      const chSel = document.getElementById('chapter-select');
+      const chapters = [...new Set(sentences.map(s => s.chapter))].sort((a,b)=>a-b);
+      chapters.forEach(ch => {
+        const opt = document.createElement('option');
+        opt.value = ch; opt.text = `Chapter ${ch}`;
+        chSel.add(opt);
+      });
+      chSel.onchange = fillSentenceSelector;
+      fillSentenceSelector();
+    }
+
+    function fillSentenceSelector() {
+      const ch = +document.getElementById('chapter-select').value;
+      const ss = document.getElementById('sentence-select');
+      ss.innerHTML = '';
+      sentences
+        .filter(s => s.chapter === ch)
+        .sort((a,b)=>a.number-b.number)
+        .forEach(s => {
+          const opt = document.createElement('option');
+          opt.value = s.number;
+          opt.text  = `${s.number}. ${s.text}`;
+          ss.add(opt);
+        });
+    }
+
+    // 3) 불러오기 버튼 클릭
+    document.getElementById('load-btn').onclick = () => {
+      const ch  = +document.getElementById('chapter-select').value;
+      const num = +document.getElementById('sentence-select').value;
+      const s   = sentences.find(x=>x.chapter===ch&&x.number===num);
+      document.getElementById('sentence-text').innerText = s.text;
+      document.getElementById('native-audio').src = s.audio;
+      document.getElementById('score').innerText = '유사도: – 점';
+    };
+
+    // 4) 원어민 음성 재생
+    document.getElementById('play-native').onclick = () => {
+      document.getElementById('native-audio').play();
+    };
+
+    // 5) 녹음 시작
+    document.getElementById('record-me').onclick = async () => {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      recorder = new MediaRecorder(stream);
+      audioChunks = [];
+      recorder.ondataavailable = e => audioChunks.push(e.data);
+      recorder.start();
+      document.getElementById('stop-record').disabled = false;
+      document.getElementById('record-me').disabled = true;
+    };
+
+    // 6) 녹음 중지 → 서버 전송 → 차트 + 내 녹음 재생 활성화
+    document.getElementById('stop-record').onclick = () => {
+      recorder.stop();
+      recorder.onstop = async () => {
+        const blob = new Blob(audioChunks, { type: 'audio/webm' });
+        // — 내 녹음 들려주기
+        const learnerAudio = document.getElementById('learner-audio');
+        learnerAudio.src = URL.createObjectURL(blob);
+        document.getElementById('play-learner').disabled = false;
+        document.getElementById('play-learner').onclick = () => learnerAudio.play();
+
+        // — 서버에 전송
+        const fd = new FormData();
+        fd.append('file', blob, 'record.webm');
+        try {
+          const res  = await fetch('http://127.0.0.1:5000/api/analyze', {
+            method:'POST', body:fd
+          });
+          const json= await res.json();
+          if (json.error) {
+            document.getElementById('score').innerText = `오류: ${json.error}`;
+          } else {
+            document.getElementById('score').innerText = `유사도: ${json.score}점`;
+            drawCharts(json.pitch, json.intensity);
+          }
+        } catch(e) {
+          console.error(e);
+          document.getElementById('score').innerText = '오류가 발생했습니다.';
+        }
+
+        document.getElementById('stop-record').disabled = true;
+        document.getElementById('record-me').disabled = false;
+      };
+    };
+
+    // 7) Chart.js 로 시각화
+    function drawCharts(pitch, intensity) {
+      if (window.pitchChart)     window.pitchChart.destroy();
+      if (window.intensityChart) window.intensityChart.destroy();
+
+      const ctxP = document.getElementById('pitch-chart').getContext('2d');
+      window.pitchChart = new Chart(ctxP, {
+        type: 'line',
+        data: {
+          labels: pitch.native.map((_,i)=>i),
+          datasets: [
+            { label:'원어민 Pitch', data:pitch.native },
+            { label:'내 Pitch',     data:pitch.learner }
+          ]
+        },
+        options: {
+          scales:{ y:{ title:{ display:true, text:'Hz' } } }
+        }
+      });
+
+      const ctxI = document.getElementById('intensity-chart').getContext('2d');
+      window.intensityChart = new Chart(ctxI, {
+        type: 'line',
+        data: {
+          labels: intensity.native.map((_,i)=>i),
+          datasets: [
+            { label:'원어민 Intensity', data:intensity.native },
+            { label:'내 Intensity',      data:intensity.learner }
+          ]
+        },
+        options: {
+          scales:{ y:{ title:{ display:true, text:'dB' } } }
+        }
+      });
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+flask
+flask-cors
+pydub
+numpy
+parselmouth
+dtw-python
