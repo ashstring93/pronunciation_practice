@@ -11,6 +11,10 @@ collections.Mapping = collections.abc.Mapping
 fake = types.ModuleType("UserDict")
 fake.DictMixin = collections.abc.Mapping
 sys.modules["UserDict"] = fake
+
+import urllib, urllib.parse
+# urllib.quote 를 urllib.parse.quote 에 바인딩
+urllib.quote = urllib.parse.quote
 # ───────────────────────────────────────────────────────
 
 from flask import Flask, jsonify, request
