@@ -1,6 +1,8 @@
+setuptools<58.0.0
 flask
 flask-cors
 pydub
 numpy
 parselmouth
 dtw-python
+gunicorn
