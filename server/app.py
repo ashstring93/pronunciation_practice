@@ -1,3 +1,18 @@
+# server/app.py
+
+# ───────────────────────────────────────────────────────
+# 1) Python 3.11 에서 UserDict·Mapping import 문제 우회
+import sys, types, collections, collections.abc
+
+# collections.Mapping이 collections.abc.Mapping 으로 옮겨진 것을 보정
+collections.Mapping = collections.abc.Mapping
+
+# UserDict 모듈이 없으므로, 가짜 모듈을 만들어 DictMixin을 Mapping alias로 넣어 줌
+fake = types.ModuleType("UserDict")
+fake.DictMixin = collections.abc.Mapping
+sys.modules["UserDict"] = fake
+# ───────────────────────────────────────────────────────
+
 from flask import Flask, jsonify, request
 from flask_cors import CORS, cross_origin
 import parselmouth
