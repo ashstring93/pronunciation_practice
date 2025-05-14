@@ -1,26 +1,31 @@
 # server/app.py
 
 # ───────────────────────────────────────────────────────
-# 1) Python 3.11: UserDict · collections.Mapping 패치
+# 1) Python3.11: UserDict·collections.Mapping 패치
 import sys, types, collections, collections.abc
 collections.Mapping = collections.abc.Mapping
 fake_ud = types.ModuleType("UserDict")
 fake_ud.DictMixin = collections.abc.Mapping
 sys.modules["UserDict"] = fake_ud
 
-# 2) Python 3.11: urllib.quote 패치
+# 2) Python3.11: urllib.quote 패치
 import urllib, urllib.parse
 urllib.quote = urllib.parse.quote
 
-# 3) parselmouth DFP 어댑터 스텁 (SyntaxError 우회)
-#    parselmouth.adapters.dfp.client / interface 모듈을 빈 모듈로 대체
-fake_mod = types.ModuleType
-sys.modules['parselmouth.adapters']             = types.ModuleType('parselmouth.adapters')
-sys.modules['parselmouth.adapters.dfp']         = types.ModuleType('parselmouth.adapters.dfp')
+# 3) parselmouth DFP 어댑터 스텁 (interface, client, config)
+#    parselmouth.adapters.dfp 패키지 내 모듈들을 빈 모듈로 미리 등록
+sys.modules['parselmouth.adapters']               = types.ModuleType('parselmouth.adapters')
+sys.modules['parselmouth.adapters.dfp']           = types.ModuleType('parselmouth.adapters.dfp')
 sys.modules['parselmouth.adapters.dfp.interface'] = types.ModuleType('parselmouth.adapters.dfp.interface')
 sys.modules['parselmouth.adapters.dfp.client']    = types.ModuleType('parselmouth.adapters.dfp.client')
-# interface 모듈에는 DFPInterface 클래스만 최소 정의
-sys.modules['parselmouth.adapters.dfp.interface'].DFPInterface = type('DFPInterface', (), {})
+# ───────────────────────────────────────────────────────
+# 여기까지가 “맨 윗부분”이고, 이 아래에 DFPConfig 스텁을 추가합니다:
+
+# ───────────────────────────────────────────────────────
+# 4) DFPConfig 스텁 추가
+fake_cfg_mod = types.ModuleType('parselmouth.adapters.dfp.config')
+fake_cfg_mod.DFPConfig = type('DFPConfig', (), {})
+sys.modules['parselmouth.adapters.dfp.config'] = fake_cfg_mod
 # ───────────────────────────────────────────────────────
 
 from flask import Flask, jsonify, request
