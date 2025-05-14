@@ -16,16 +16,20 @@ urllib.quote = urllib.parse.quote
 #    parselmouth.adapters.dfp 패키지 내 모듈들을 빈 모듈로 미리 등록
 sys.modules['parselmouth.adapters']               = types.ModuleType('parselmouth.adapters')
 sys.modules['parselmouth.adapters.dfp']           = types.ModuleType('parselmouth.adapters.dfp')
-sys.modules['parselmouth.adapters.dfp.interface'] = types.ModuleType('parselmouth.adapters.dfp.interface')
-sys.modules['parselmouth.adapters.dfp.client']    = types.ModuleType('parselmouth.adapters.dfp.client')
-# ───────────────────────────────────────────────────────
-# 여기까지가 “맨 윗부분”이고, 이 아래에 DFPConfig 스텁을 추가합니다:
 
-# ───────────────────────────────────────────────────────
-# 4) DFPConfig 스텁 추가
-fake_cfg_mod = types.ModuleType('parselmouth.adapters.dfp.config')
-fake_cfg_mod.DFPConfig = type('DFPConfig', (), {})
-sys.modules['parselmouth.adapters.dfp.config'] = fake_cfg_mod
+# interface 모듈 스텁
+iface_mod = types.ModuleType('parselmouth.adapters.dfp.interface')
+# 반드시 DFPInterface 클래스를 정의해 줍니다
+setattr(iface_mod, 'DFPInterface', type('DFPInterface', (), {}))
+sys.modules['parselmouth.adapters.dfp.interface'] = iface_mod
+
+# client 모듈 스텁
+sys.modules['parselmouth.adapters.dfp.client']    = types.ModuleType('parselmouth.adapters.dfp.client')
+
+# config 모듈 스텁
+cfg_mod = types.ModuleType('parselmouth.adapters.dfp.config')
+setattr(cfg_mod, 'DFPConfig', type('DFPConfig', (), {}))
+sys.modules['parselmouth.adapters.dfp.config']    = cfg_mod
 # ───────────────────────────────────────────────────────
 
 from flask import Flask, jsonify, request
