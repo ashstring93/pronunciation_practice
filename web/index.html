@@ -48,6 +48,9 @@
   <canvas id="intensity-chart"></canvas>
 
   <script>
+    // 0) 배포된 백엔드 API 호스트 (본인의 Render 도메인으로 교체하세요)
+    const API_HOST = 'https://pronunciation-api-k1iy.onrender.com';
+
     let sentences = [], recorder, audioChunks;
 
     // 1) sentences.json 불러오기
@@ -124,8 +127,10 @@
         const fd = new FormData();
         fd.append('file', blob, 'record.webm');
         try {
-          const res  = await fetch('http://127.0.0.1:5000/api/analyze', {
-            method:'POST', body:fd
+          // ★ 이 부분만 API_HOST 를 사용하도록 변경했습니다
+          const res  = await fetch(`${API_HOST}/api/analyze`, {
+            method:'POST',
+            body:fd
           });
           const json= await res.json();
           if (json.error) {
