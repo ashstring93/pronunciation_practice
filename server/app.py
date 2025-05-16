@@ -13,13 +13,11 @@ import urllib, urllib.parse
 urllib.quote = urllib.parse.quote
 
 # 3) parselmouth DFP 어댑터 스텁 (interface, client, config)
-#    parselmouth.adapters.dfp 패키지 내 모듈들을 빈 모듈로 미리 등록
 sys.modules['parselmouth.adapters']               = types.ModuleType('parselmouth.adapters')
 sys.modules['parselmouth.adapters.dfp']           = types.ModuleType('parselmouth.adapters.dfp')
 
 # interface 모듈 스텁
 iface_mod = types.ModuleType('parselmouth.adapters.dfp.interface')
-# 반드시 DFPInterface 클래스를 정의해 줍니다
 setattr(iface_mod, 'DFPInterface', type('DFPInterface', (), {}))
 sys.modules['parselmouth.adapters.dfp.interface'] = iface_mod
 
@@ -40,7 +38,14 @@ from dtw import dtw
 from pydub import AudioSegment
 import os
 
-app = Flask(__name__)
+# Flask 앱 선언부: static_folder와 static_url_path를 지정하여
+# server/static 디렉토리의 파일을 루트 URL로 서빙합니다.
+app = Flask(
+    __name__,
+    static_folder="static",
+    static_url_path=""
+)
+
 # 모든 엔드포인트에 대해 CORS 허용
 CORS(app)
 
@@ -63,7 +68,7 @@ def analyze():
                     .export(wav_path, format="wav")
 
         # 3) Sound 객체 준비
-        snd_native  = parselmouth.Sound("native/ihaveapen.wav")
+        snd_native  = parselmouth.Sound("static/native/ch1_1.wav")
         snd_learner = parselmouth.Sound(wav_path)
 
         # 4) 피치·강도 추출 헬퍼
@@ -71,7 +76,6 @@ def analyze():
             return np.nan_to_num(sound.to_pitch().selected_array["frequency"])
 
         def extract_intensity_arr(sound):
-            # to_intensity().values는 (1×N) 이므로 T, flatten
             return np.nan_to_num(sound.to_intensity().values.T.flatten())
 
         p_native    = extract_pitch_arr(snd_native)
@@ -105,8 +109,8 @@ def analyze():
         final_score = round(final_score, 1)
 
         # 9) 차트 그리기용 배열
-        pitch_dict = {"native": p_native.tolist(), "learner": p_learner.tolist()}
-        intensity_dict = {"native": i_native.tolist(), "learner": i_learner.tolist()}
+        pitch_dict     = {"native": p_native.tolist(),    "learner": p_learner.tolist()}
+        intensity_dict = {"native": i_native.tolist(),    "learner": i_learner.tolist()}
 
         # 10) 임시 파일 삭제
         os.remove(webm_path)
@@ -127,4 +131,5 @@ def analyze():
         return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    # 로컬 테스트 시 포트를 0.0.0.0:5000으로 바인딩
+    app.run(host="0.0.0.0", port=5000, debug=True)
