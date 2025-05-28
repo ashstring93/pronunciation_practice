@@ -49,14 +49,14 @@
 
   <script>
     // 0) 배포된 백엔드 API 호스트 (본인의 Render 도메인으로 교체하세요)
-    const API_HOST = 'https://pronunciation-api-k1iy.onrender.com';
+    const API_HOST = 'https://pronunciation-practice.onrender.com';
 
     let sentences = [], recorder, audioChunks;
 
     // 1) sentences.json 불러오기
-    fetch('sentences.json')
-      .then(r => r.json())
-      .then(data => { sentences = data; initSelectors(); });
+     fetch(`${API_HOST}/sentences.json`)
+    .then(r => r.json())
+    .then(data => { sentences = data; initSelectors(); });
 
     // 2) 드롭다운 초기화
     function initSelectors() {
@@ -92,7 +92,7 @@
       const num = +document.getElementById('sentence-select').value;
       const s   = sentences.find(x=>x.chapter===ch&&x.number===num);
       document.getElementById('sentence-text').innerText = s.text;
-      document.getElementById('native-audio').src = s.audio;
+      document.getElementById('native-audio').src = `${API_HOST}/${s.audio}`;
       document.getElementById('score').innerText = '유사도: – 점';
     };
 
@@ -127,8 +127,7 @@
         const fd = new FormData();
         fd.append('file', blob, 'record.webm');
         try {
-          // ★ 이 부분만 API_HOST 를 사용하도록 변경했습니다
-          const res  = await fetch(`${API_HOST}/api/analyze`, {
+          const res = await fetch(`${API_HOST}/api/analyze`, {
             method:'POST',
             body:fd
           });

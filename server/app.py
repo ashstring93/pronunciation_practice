@@ -1,6 +1,3 @@
-# server/app.py
-
-# ───────────────────────────────────────────────────────
 # 1) Python3.11: UserDict·collections.Mapping 패치
 import sys, types, collections, collections.abc
 collections.Mapping = collections.abc.Mapping
@@ -50,6 +47,9 @@ app = Flask(__name__, static_folder="static", static_url_path="")
 CORS(app)
 
 @app.route("/")
+def index():
+    # server/static/index.html 을 반환
+    return send_from_directory(app.static_folder, "index.html")
 def hello():
     return "서버가 잘 켜졌어요!"
 
