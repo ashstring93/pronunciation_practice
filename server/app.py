@@ -27,15 +27,21 @@ setattr(cfg_mod, 'DFPConfig', type('DFPConfig', (), {}))
 sys.modules['parselmouth.adapters.dfp.config']    = cfg_mod
 # ───────────────────────────────────────────────────────
 
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS, cross_origin
 
 # ── 여기가 핵심 수정 부분 ──
 import parselmouth
-PM_Sound = parselmouth.Sound
-# parselmouth.Sound 가 없을 경우를 대비해 복원
-parselmouth.Sound = PM_Sound
-# ──────────────────────────
+# ──── parselmouth.Sound 복원 ────
+if not hasattr(parselmouth, "Sound"):
+    try:
+        from parselmouth.sound import Sound as PM_Sound
+    except ImportError:
+        from parselmouth.praat import Sound as PM_Sound
+    parselmouth.Sound = PM_Sound
+else:
+    PM_Sound = parselmouth.Sound
+# ───────────────────────────────────
 
 import numpy as np
 from dtw import dtw
