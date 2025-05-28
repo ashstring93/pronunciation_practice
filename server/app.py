@@ -35,7 +35,7 @@ from flask_cors import CORS, cross_origin
 
 # ── 여기가 핵심 수정 부분 ──
 import parselmouth
-from parselmouth.praat import Sound as PM_Sound
+PM_Sound = parselmouth.Sound
 # parselmouth.Sound 가 없을 경우를 대비해 복원
 parselmouth.Sound = PM_Sound
 # ──────────────────────────
