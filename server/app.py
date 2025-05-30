@@ -37,6 +37,13 @@ import os
 
 # ── 여기만 바꾸시면 됩니다! ──
 from parselmouth import Sound as PM_Sound
+try:
+    # C-extension 모듈에서 직접 로드
+    from parselmouth._parselmouth import Sound as PM_Sound
+except ImportError:
+    # fallback: 루트 패키지에 노출되어 있으면 이걸 씁니다
+    import parselmouth
+    PM_Sound = parselmouth.Sound
 # ───────────────────────────
 
 app = Flask(__name__, static_folder="static", static_url_path="")
